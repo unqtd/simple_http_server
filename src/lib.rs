@@ -42,7 +42,9 @@ impl<'a> SimpleHttpServer<'a> {
 
             match connection.read_request() {
                 Ok(request) => {
-                    if let Some(handler) = self.handlers_on_request.get(request.url.uri.as_str()) {
+                    if let Some(handler) =
+                        self.handlers_on_request.get(request.url.uri.path.as_str())
+                    {
                         connection.send_response(&handler(request)).unwrap();
                     } else {
                         connection

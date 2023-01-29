@@ -12,12 +12,16 @@ pub struct Request {
     pub body: Option<Body>,
 }
 
-pub type Uri = String;
-
 #[derive(Debug)]
 pub struct Url {
     pub uri: Uri,
     pub host: String,
+}
+
+#[derive(Debug)]
+pub struct Uri {
+    pub path: String,
+    pub query_string: Option<String>,
 }
 
 #[derive(Debug)]

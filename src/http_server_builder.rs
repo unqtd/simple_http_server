@@ -7,8 +7,8 @@ impl<'a> SimpleHttpServerBuilder<'a> {
         self.0
     }
 
-    pub fn handle_request(mut self, rout: &'a str, handler: Handler) -> Self {
-        self.0.handlers_on_request.insert(rout, handler);
+    pub fn handle_request(mut self, path: &'a str, handler: Handler) -> Self {
+        self.0.handlers_on_request.insert(path, handler);
         self
     }
 

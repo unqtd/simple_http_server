@@ -3,12 +3,14 @@ extern crate simple_http_server;
 use simple_http_server::{response::Response, SimpleHttpServer};
 
 fn main() {
-    let port = 7070;
-    let addr = format!("{host}:{port}", host = std::env::var("HOST").unwrap());
+    let (port, host) = (
+        7070,
+        std::env::var("HOST").expect("Ожидается переменная HOST!"),
+    );
 
     let startup = move || println!("Server start on {port} 🚀!");
 
-    let server = SimpleHttpServer::new(&addr)
+    let server = SimpleHttpServer::new(&format!("{host}:{port}"))
         .unwrap()
         .handle_startup(startup)
         .handle_request("/", |request| {

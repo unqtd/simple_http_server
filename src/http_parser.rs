@@ -9,7 +9,21 @@ pub fn parse_starting_line(line: &str) -> IResult<(Method, Uri)> {
     let (method, line) = line.split_once(' ').ok_or(ERROR)?;
     let (uri, _) = line.split_once(' ').ok_or(ERROR)?;
 
-    Ok((method.try_into()?, uri.into()))
+    Ok((method.try_into()?, parse_uri(uri)))
+}
+
+fn parse_uri(input: &str) -> Uri {
+    if let Some((path, query_string)) = input.split_once("?") {
+        Uri {
+            path: path.to_string(),
+            query_string: Some(query_string.to_string()),
+        }
+    } else {
+        Uri {
+            path: input.to_string(),
+            query_string: None,
+        }
+    }
 }
 
 pub fn parse_header(line: &str) -> IResult<(String, String)> {
