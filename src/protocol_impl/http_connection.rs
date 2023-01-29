@@ -5,7 +5,7 @@ use crate::types::{
     response::Response,
 };
 use std::{
-    io::{self, BufRead, BufReader, Read, Write},
+    io::{self, BufRead, BufReader, BufWriter, Read, Write},
     net::TcpStream,
 };
 
@@ -30,7 +30,11 @@ impl HttpConnection {
                 .parse()
                 .map_err(|_| HttpError::BadRequest(InvalidBadRequestKind::ContentLengthValue))?;
 
-            Some(Self::read_body(&mut bufreader, length)?)
+            if length == 0 {
+                None
+            } else {
+                Some(Self::read_body(&mut bufreader, length)?)
+            }
         } else {
             None
         };
@@ -44,23 +48,26 @@ impl HttpConnection {
     }
 
     pub fn send_response(&mut self, response: &Response) -> IResult<()> {
+        let mut bufwriter = BufWriter::new(&mut self.0);
+
         let starting_line = format!(
             "HTTP/1.1 {code_and_reason}\r\n",
             code_and_reason = response.code.as_str()
         );
 
         // Отправка стартовой строки
-        self.send_bytes(starting_line.as_bytes())?;
+        Self::send_bytes(&mut bufwriter, starting_line.as_bytes())?;
         // Отправка заголовков
-        self.send_bytes(response.headers.as_bytes())?;
+        Self::send_bytes(&mut bufwriter, response.headers.as_bytes())?;
         // Отправка разделителя между заголовком ответа и телом
-        self.send_bytes("\r\n".as_bytes())?;
+        Self::send_bytes(&mut bufwriter, "\r\n".as_bytes())?;
 
         // Отправка тела запроса, если оно есть
         if let Some(body) = &response.body {
-            self.send_bytes(body.as_slice())?;
+            Self::send_bytes(&mut bufwriter, body.as_slice())?;
         }
 
+        bufwriter.flush().expect("Ошибка при сбросе буффера.");
         Ok(())
     }
 
@@ -70,8 +77,8 @@ impl HttpConnection {
         Ok(buffer)
     }
 
-    fn send_bytes(&mut self, bytes: &[u8]) -> IResult<()> {
-        self.0.write_all(bytes).map_err(HttpError::Io)
+    fn send_bytes(bufwriter: &mut BufWriter<&mut TcpStream>, bytes: &[u8]) -> IResult<()> {
+        bufwriter.write_all(bytes).map_err(HttpError::Io)
     }
 
     fn read_headers(bufreader: &mut BufReader<&mut TcpStream>) -> IResult<Headers> {

@@ -8,7 +8,7 @@ fn main() {
     let server = SimpleHttpServer::new(&addr)
         .unwrap()
         .handle_request("/", |request| {
-            println!("{request:?}");
+            println!("\n{request:?}\n");
 
             Response::new(Code::Ok)
                 .header("Content-Type", "text/html")
