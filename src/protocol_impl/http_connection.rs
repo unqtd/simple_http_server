@@ -49,22 +49,16 @@ impl HttpConnection {
             code_and_reason = response.code.as_str()
         );
 
-        // Send starting_line
-        self.0
-            .write_all(starting_line.as_bytes())
-            .map_err(HttpError::Io)?;
+        // Отправка стартовой строки
+        self.send_bytes(starting_line.as_bytes())?;
+        // Отправка заголовков
+        self.send_bytes(response.headers.as_bytes())?;
+        // Отправка разделителя между заголовком ответа и телом
+        self.send_bytes("\r\n".as_bytes())?;
 
-        // Sends headers
-        self.0
-            .write_all(response.headers.as_bytes())
-            .map_err(HttpError::Io)?;
-
-        // Send spliter
-        self.0.write_all("\r\n".as_bytes()).map_err(HttpError::Io)?;
-
-        // Send body if it exist
+        // Отправка тела запроса, если оно есть
         if let Some(body) = &response.body {
-            self.0.write_all(body.as_slice()).map_err(HttpError::Io)?;
+            self.send_bytes(body.as_slice())?;
         }
 
         Ok(())
@@ -74,6 +68,10 @@ impl HttpConnection {
         let mut buffer = String::new();
         bufreader.read_line(&mut buffer).map_err(HttpError::Io)?;
         Ok(buffer)
+    }
+
+    fn send_bytes(&mut self, bytes: &[u8]) -> IResult<()> {
+        self.0.write_all(bytes).map_err(HttpError::Io)
     }
 
     fn read_headers(bufreader: &mut BufReader<&mut TcpStream>) -> IResult<Headers> {

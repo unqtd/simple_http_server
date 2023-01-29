@@ -5,7 +5,7 @@ use simple_http_server::{Code, Response, SimpleHttpServer};
 fn main() {
     let addr = std::env::var("ADDR").expect("Ожидается переменная ADDR!");
 
-    let server = SimpleHttpServer::bind(&addr)
+    let server = SimpleHttpServer::new(&addr)
         .unwrap()
         .handle_request("/", |request| {
             println!("{request:?}");

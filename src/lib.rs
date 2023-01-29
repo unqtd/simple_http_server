@@ -14,17 +14,25 @@ mod builder;
 mod protocol_impl;
 mod types;
 
+/// Интерфейс инкапсулирующий в себе работу с сетью и обработку запросов.
 pub struct SimpleHttpServer<'a> {
+    /// Адрес на котором весит сервер
     addr: Addr<'a>,
+    /// Интерфейс из stdlib для работы с TCP
     listener: TcpListener,
+    /// Обработчик корректных HTTP-запросов
     handlers_on_request: Handlers<'a>,
+    /// Обработчик некорректных HTTP-запросов
     handler_on_http_error: HttpErrorHandler,
+    /// Обработчик действия при старте сервера
     handler_on_startup: StartupHandler,
+    /// Обработчик для HTTP-запросов, для которых не был найден обработчик
     handler_on_not_found: NotFoundHandler,
 }
 
 impl<'a> SimpleHttpServer<'a> {
-    pub fn bind(addr: &'a str) -> io::Result<SimpleHttpServerBuilder<'a>> {
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new(addr: &'a str) -> io::Result<SimpleHttpServerBuilder<'a>> {
         Ok(SimpleHttpServerBuilder(Self {
             listener: TcpListener::bind(addr)?,
             addr: Addr::from(addr),
