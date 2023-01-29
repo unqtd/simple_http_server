@@ -1,4 +1,4 @@
-use crate::{handler::Handler, HttpErrorHandler, NotFoundHandler, SimpleHttpServer};
+use crate::{addr::Addr, handler::Handler, HttpErrorHandler, NotFoundHandler, SimpleHttpServer};
 
 pub struct SimpleHttpServerBuilder<'a>(pub(crate) SimpleHttpServer<'a>);
 
@@ -17,7 +17,7 @@ impl<'a> SimpleHttpServerBuilder<'a> {
         self
     }
 
-    pub fn handle_startup<F: FnOnce() + 'static>(mut self, handler: F) -> Self {
+    pub fn handle_startup<F: Fn(&Addr) + 'static>(mut self, handler: F) -> Self {
         self.0.handler_on_startup = Box::new(handler);
         self
     }

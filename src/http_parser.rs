@@ -13,7 +13,7 @@ pub fn parse_starting_line(line: &str) -> IResult<(Method, Uri)> {
 }
 
 fn parse_uri(input: &str) -> Uri {
-    if let Some((path, query_string)) = input.split_once("?") {
+    if let Some((path, query_string)) = input.split_once('?') {
         Uri {
             path: path.to_string(),
             query_string: Some(query_string.to_string()),
