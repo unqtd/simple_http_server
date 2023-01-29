@@ -1,4 +1,4 @@
-use crate::{addr::Addr, handler::Handler, HttpErrorHandler, NotFoundHandler, SimpleHttpServer};
+use crate::{addr::Addr, Handler, HttpErrorHandler, NotFoundHandler, SimpleHttpServer};
 
 pub struct SimpleHttpServerBuilder<'a>(pub(crate) SimpleHttpServer<'a>);
 

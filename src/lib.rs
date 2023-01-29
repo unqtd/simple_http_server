@@ -1,23 +1,17 @@
-mod addr;
-mod body;
-mod handler;
-mod headers;
-mod http_connection;
-mod http_parser;
-mod http_server_builder;
-pub mod request;
-pub mod response;
-mod response_builder;
-
-use std::{io, net::TcpListener};
-
 use addr::Addr;
-use handler::{Handler, Handlers};
-use http_connection::{HttpConnection, HttpError};
 use http_server_builder::SimpleHttpServerBuilder;
-use response::Code;
+use protocol_impl::http_connection::{HttpConnection, HttpError};
+use std::{collections::HashMap, io, net::TcpListener};
+pub use types::{
+    request::Request,
+    response::{Code, Response},
+    response_builder::ResponseBuilder,
+};
 
-use crate::response::Response;
+mod addr;
+mod http_server_builder;
+mod protocol_impl;
+mod types;
 
 pub struct SimpleHttpServer<'a> {
     addr: Addr<'a>,
@@ -76,3 +70,6 @@ impl<'a> SimpleHttpServer<'a> {
 type HttpErrorHandler = fn(HttpError);
 type StartupHandler = Box<dyn FnOnce(&Addr)>;
 type NotFoundHandler = Handler;
+
+type Handler = fn(Request) -> ResponseBuilder;
+type Handlers<'a> = HashMap<&'a str, Handler>;

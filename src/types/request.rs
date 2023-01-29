@@ -1,8 +1,6 @@
-use crate::{
-    body::Body,
-    headers::Headers,
-    http_connection::{HttpError, InvalidBadRequestKind},
-};
+use crate::protocol_impl::http_connection::{HttpError, InvalidBadRequestKind};
+
+use super::{body::Body, headers::Headers};
 
 #[derive(Debug)]
 pub struct Request {

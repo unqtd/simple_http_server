@@ -1,7 +1,9 @@
 use crate::{
-    http_connection::{HttpError, IResult, InvalidBadRequestKind},
-    request::{Method, Uri},
+    protocol_impl::http_connection::{HttpError, InvalidBadRequestKind},
+    types::request::{Method, Uri},
 };
+
+use super::http_connection::IResult;
 
 pub fn parse_starting_line(line: &str) -> IResult<(Method, Uri)> {
     const ERROR: HttpError = HttpError::BadRequest(InvalidBadRequestKind::StaringLine);

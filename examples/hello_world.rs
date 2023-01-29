@@ -1,9 +1,6 @@
 extern crate simple_http_server;
 
-use simple_http_server::{
-    response::{Code, Response},
-    SimpleHttpServer,
-};
+use simple_http_server::{Code, Response, SimpleHttpServer};
 
 fn main() {
     let addr = std::env::var("ADDR").expect("Ожидается переменная ADDR!");

@@ -1,15 +1,15 @@
+use crate::types::{
+    body::Body,
+    headers::Headers,
+    request::{Request, Url},
+    response::Response,
+};
 use std::{
     io::{self, BufRead, BufReader, Read, Write},
     net::TcpStream,
 };
 
-use crate::{
-    body::Body,
-    headers::Headers,
-    http_parser,
-    request::{Request, Url},
-    response::Response,
-};
+use super::http_parser;
 
 pub struct HttpConnection(pub TcpStream);
 

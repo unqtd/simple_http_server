@@ -1,4 +1,4 @@
-use crate::{body::Body, response_builder::ResponseBuilder};
+use super::{body::Body, response_builder::ResponseBuilder};
 
 #[derive(Debug)]
 pub struct Response {
