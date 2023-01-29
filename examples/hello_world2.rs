@@ -12,7 +12,8 @@ fn main() {
         .unwrap()
         .handle_startup(startup)
         .handle_not_found(not_found_handler)
-        .handle_request("/", main_handler);
+        .handle_request("/", main_handler)
+        .build();
 
     server.listen()
 }

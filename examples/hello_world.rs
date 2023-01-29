@@ -17,7 +17,8 @@ fn main() {
             Response::ok()
                 .header("Content-Type", "text/html")
                 .body("<h1>Hello World</h1>".into())
-        });
+        })
+        .build();
 
     server.listen()
 }

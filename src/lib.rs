@@ -3,6 +3,7 @@ mod handler;
 mod headers;
 mod http_connection;
 mod http_parser;
+mod http_server_builder;
 pub mod request;
 pub mod response;
 
@@ -10,6 +11,7 @@ use std::{io, net::TcpListener};
 
 use handler::{Handler, Handlers};
 use http_connection::{HttpConnection, HttpError};
+use http_server_builder::SimpleHttpServerBuilder;
 
 use crate::response::Response;
 
@@ -22,14 +24,14 @@ pub struct SimpleHttpServer<'a> {
 }
 
 impl<'a> SimpleHttpServer<'a> {
-    pub fn new(addr: &str) -> io::Result<Self> {
-        Ok(Self {
+    pub fn new(addr: &str) -> io::Result<SimpleHttpServerBuilder<'a>> {
+        Ok(SimpleHttpServerBuilder(Self {
             listener: TcpListener::bind(addr)?,
             handlers_on_request: Handlers::new(),
             handler_on_http_error: |err| eprintln!("Something went wrong: {err:?}!"),
             handler_on_startup: Box::new(|| {}),
             handler_on_not_found: |_| Response::not_found(),
-        })
+        }))
     }
 
     pub fn listen(self) -> ! {
@@ -56,26 +58,6 @@ impl<'a> SimpleHttpServer<'a> {
         }
 
         panic!()
-    }
-
-    pub fn handle_request(mut self, rout: &'a str, handler: Handler) -> Self {
-        self.handlers_on_request.insert(rout, handler);
-        self
-    }
-
-    pub fn handle_http_error(mut self, handler: HttpErrorHandler) -> Self {
-        self.handler_on_http_error = handler;
-        self
-    }
-
-    pub fn handle_startup<F: FnOnce() + 'static>(mut self, handler: F) -> Self {
-        self.handler_on_startup = Box::new(handler);
-        self
-    }
-
-    pub fn handle_not_found(mut self, handler: NotFoundHandler) -> Self {
-        self.handler_on_not_found = handler;
-        self
     }
 }
 
