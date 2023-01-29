@@ -7,6 +7,7 @@ mod http_parser;
 mod http_server_builder;
 pub mod request;
 pub mod response;
+mod response_builder;
 
 use std::{io, net::TcpListener};
 
@@ -14,6 +15,7 @@ use addr::Addr;
 use handler::{Handler, Handlers};
 use http_connection::{HttpConnection, HttpError};
 use http_server_builder::SimpleHttpServerBuilder;
+use response::Code;
 
 use crate::response::Response;
 
@@ -36,7 +38,7 @@ impl<'a> SimpleHttpServer<'a> {
             handler_on_startup: Box::new(|Addr { source: addr, .. }| {
                 println!("Server start on {addr} 🚀!")
             }),
-            handler_on_not_found: |_| Response::not_found(),
+            handler_on_not_found: |_| Response::new(Code::NotFound),
         }))
     }
 
@@ -51,16 +53,18 @@ impl<'a> SimpleHttpServer<'a> {
                     if let Some(handler) =
                         self.handlers_on_request.get(request.url.uri.path.as_str())
                     {
-                        connection.send_response(&handler(request)).unwrap();
+                        connection.send_response(&handler(request).build()).unwrap();
                     } else {
                         connection
-                            .send_response(&(self.handler_on_not_found)(request))
+                            .send_response(&(self.handler_on_not_found)(request).build())
                             .unwrap();
                     }
                 }
                 Err(err) => {
                     (self.handler_on_http_error)(err);
-                    connection.send_response(&Response::bad_request()).unwrap();
+                    connection
+                        .send_response(&Response::new(Code::BadRequest).build())
+                        .unwrap();
                 }
             }
         }

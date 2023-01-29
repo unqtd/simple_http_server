@@ -1,6 +1,9 @@
 extern crate simple_http_server;
 
-use simple_http_server::{response::Response, SimpleHttpServer};
+use simple_http_server::{
+    response::{Code, Response},
+    SimpleHttpServer,
+};
 
 fn main() {
     let addr = std::env::var("ADDR").expect("Ожидается переменная ADDR!");
@@ -10,7 +13,7 @@ fn main() {
         .handle_request("/", |request| {
             println!("{request:?}");
 
-            Response::ok()
+            Response::new(Code::Ok)
                 .header("Content-Type", "text/html")
                 .body("<h1>Hello World</h1>".into())
         })
