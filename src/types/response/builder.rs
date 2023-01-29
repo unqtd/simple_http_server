@@ -1,4 +1,4 @@
-use super::response::Response;
+use crate::Response;
 
 pub struct ResponseBuilder(pub(crate) Response);
 

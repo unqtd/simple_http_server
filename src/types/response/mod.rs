@@ -1,4 +1,7 @@
-use super::{body::Body, response_builder::ResponseBuilder};
+use self::builder::ResponseBuilder;
+use super::body::Body;
+
+pub mod builder;
 
 #[derive(Debug)]
 pub struct Response {

@@ -39,3 +39,30 @@ ADDR="localhost:7070" cargo run --example hello_world
 
 * [Rustbook](https://doc.rust-lang.org/book/ch20-00-final-project-a-web-server.html)
 
+### Структура проекта 
+
+```
+.
+├── addr.rs
+├── builder.rs
+├── lib.rs
+├── protocol_impl
+│   ├── http_connection.rs
+│   ├── http_parser.rs
+│   └── mod.rs
+└── types
+    ├── body.rs
+    ├── headers.rs
+    ├── mod.rs
+    ├── request.rs
+    └── response
+        ├── builder.rs
+        └── mod.rs
+```
+* `lib.rs` - содержит в себе высокоуровненную логику обработки запросов, а 
+также по совместительству и интерфейс для пользователя. 
+* `types` - здесь содержится типовое описание HTTP-протокола, а именно структуру
+запроса и ответа. 
+* `protocol_impl` - а это часть является "ядром" веб-сервера, где происходит весь
+процесс взаимодействие с сетью. 
+

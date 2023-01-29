@@ -1,15 +1,16 @@
 use addr::Addr;
-use http_server_builder::SimpleHttpServerBuilder;
+use builder::SimpleHttpServerBuilder;
 use protocol_impl::http_connection::{HttpConnection, HttpError};
 use std::{collections::HashMap, io, net::TcpListener};
+use types::response::builder::ResponseBuilder;
+
 pub use types::{
     request::Request,
     response::{Code, Response},
-    response_builder::ResponseBuilder,
 };
 
 mod addr;
-mod http_server_builder;
+mod builder;
 mod protocol_impl;
 mod types;
 
