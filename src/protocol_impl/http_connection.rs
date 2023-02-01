@@ -82,19 +82,12 @@ impl HttpConnection {
     }
 
     fn read_headers(bufreader: &mut BufReader<&mut TcpStream>) -> IResult<Headers> {
-        let mut headers = Headers::new();
-
-        let lines = bufreader
+        bufreader
             .lines()
             .map(Result::unwrap)
-            .take_while(|x| !x.is_empty());
-
-        for line in lines {
-            let (key, value) = http_parser::parse_header(&line)?;
-            headers.insert(key, value);
-        }
-
-        Ok(headers)
+            .take_while(|line| !line.is_empty())
+            .map(|line| http_parser::parse_header(&line))
+            .collect()
     }
 
     fn read_body(bufreader: &mut BufReader<&mut TcpStream>, length: u64) -> IResult<Body> {
