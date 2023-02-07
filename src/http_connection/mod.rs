@@ -1,34 +1,34 @@
+mod parser;
+
 use crate::types::{
     body::Body,
     headers::Headers,
+    http_error::HttpError,
     request::{Request, Url},
     response::Response,
 };
+
 use std::{
-    io::{self, BufRead, BufReader, BufWriter, Read, Write},
+    io::{BufRead, BufReader, BufWriter, Read, Write},
     net::TcpStream,
 };
 
-use super::http_parser;
-
-pub struct HttpConnection(pub TcpStream);
-
-pub type IResult<T> = Result<T, HttpError>;
+pub struct HttpConnection(pub(crate) TcpStream);
 
 impl HttpConnection {
-    pub fn read_request(&mut self) -> IResult<Request> {
+    pub fn read_request(&mut self) -> Result<Request, HttpError> {
         let mut bufreader = BufReader::new(&mut self.0);
 
         let starting_line = Self::read_line(&mut bufreader)?;
-        let (method, uri) = http_parser::parse_starting_line(&starting_line)?;
+        let (method, uri) = parser::parse_starting_line(&starting_line)?;
 
         let headers = Self::read_headers(&mut bufreader)?;
         let host = headers.get("Host").ok_or(HttpError::NotFoundHost)?.clone();
 
         let body = if let Some(length) = headers.get("Content-Length") {
-            let length = length
-                .parse()
-                .map_err(|_| HttpError::BadRequest(InvalidBadRequestKind::ContentLengthValue))?;
+            let length = length.parse().map_err(|_| {
+                HttpError::InvalidSyntaxRequest("Некорректное значения заголовка Content-Length!")
+            })?;
 
             if length == 0 {
                 None
@@ -47,7 +47,7 @@ impl HttpConnection {
         })
     }
 
-    pub fn send_response(&mut self, response: &Response) -> IResult<()> {
+    pub fn send_response(&mut self, response: &Response) -> Result<(), HttpError> {
         let mut bufwriter = BufWriter::new(&mut self.0);
 
         let starting_line = format!(
@@ -60,37 +60,43 @@ impl HttpConnection {
         // Отправка заголовков
         Self::send_bytes(&mut bufwriter, response.headers.as_bytes())?;
         // Отправка разделителя между заголовком ответа и телом
-        Self::send_bytes(&mut bufwriter, "\r\n".as_bytes())?;
+        Self::send_bytes(&mut bufwriter, b"\r\n")?;
 
         // Отправка тела запроса, если оно есть
         if let Some(body) = &response.body {
             Self::send_bytes(&mut bufwriter, body.as_slice())?;
         }
 
-        bufwriter.flush().expect("Ошибка при сбросе буффера.");
+        bufwriter.flush().map_err(HttpError::Io)?;
         Ok(())
     }
 
-    fn read_line(bufreader: &mut BufReader<&mut TcpStream>) -> IResult<String> {
+    fn read_line(bufreader: &mut BufReader<&mut TcpStream>) -> Result<String, HttpError> {
         let mut buffer = String::new();
         bufreader.read_line(&mut buffer).map_err(HttpError::Io)?;
         Ok(buffer)
     }
 
-    fn send_bytes(bufwriter: &mut BufWriter<&mut TcpStream>, bytes: &[u8]) -> IResult<()> {
+    fn send_bytes(
+        bufwriter: &mut BufWriter<&mut TcpStream>,
+        bytes: &[u8],
+    ) -> Result<(), HttpError> {
         bufwriter.write_all(bytes).map_err(HttpError::Io)
     }
 
-    fn read_headers(bufreader: &mut BufReader<&mut TcpStream>) -> IResult<Headers> {
+    fn read_headers(bufreader: &mut BufReader<&mut TcpStream>) -> Result<Headers, HttpError> {
         bufreader
             .lines()
             .map(Result::unwrap)
             .take_while(|line| !line.is_empty())
-            .map(|line| http_parser::parse_header(&line))
+            .map(|line| parser::parse_header(&line))
             .collect()
     }
 
-    fn read_body(bufreader: &mut BufReader<&mut TcpStream>, length: u64) -> IResult<Body> {
+    fn read_body(
+        bufreader: &mut BufReader<&mut TcpStream>,
+        length: u64,
+    ) -> Result<Body, HttpError> {
         let mut chunk = bufreader.take(length);
 
         let mut body = Body::new();
@@ -98,19 +104,4 @@ impl HttpConnection {
 
         Ok(body)
     }
-}
-
-#[derive(Debug)]
-pub enum HttpError {
-    Io(io::Error),
-    BadRequest(InvalidBadRequestKind),
-    NotFoundHost,
-}
-
-#[derive(Debug)]
-pub enum InvalidBadRequestKind {
-    Method,
-    ContentLengthValue,
-    StaringLine,
-    HeaderSyntax,
 }

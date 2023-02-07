@@ -1,12 +1,11 @@
-use crate::{
-    protocol_impl::http_connection::{HttpError, InvalidBadRequestKind},
-    types::request::{Method, Uri},
+use crate::types::{
+    http_error::HttpError,
+    request::{Method, Uri},
 };
 
-use super::http_connection::IResult;
-
-pub fn parse_starting_line(line: &str) -> IResult<(Method, Uri)> {
-    const ERROR: HttpError = HttpError::BadRequest(InvalidBadRequestKind::StaringLine);
+pub fn parse_starting_line(line: &str) -> Result<(Method, Uri), HttpError> {
+    const ERROR: HttpError =
+        HttpError::InvalidSyntaxRequest("Некорректный синтаксис стартовый строки!");
 
     let (method, line) = line.split_once(' ').ok_or(ERROR)?;
     let (uri, _) = line.split_once(' ').ok_or(ERROR)?;
@@ -28,10 +27,10 @@ fn parse_uri(input: &str) -> Uri {
     }
 }
 
-pub fn parse_header(line: &str) -> IResult<(String, String)> {
-    let (key, value) = line
-        .split_once(':')
-        .ok_or(HttpError::BadRequest(InvalidBadRequestKind::HeaderSyntax))?;
+pub fn parse_header(line: &str) -> Result<(String, String), HttpError> {
+    let (key, value) = line.split_once(':').ok_or(HttpError::InvalidSyntaxRequest(
+        "Некорректный синтаксис заголовка!",
+    ))?;
 
     Ok((key.to_string(), value.trim().to_string()))
 }

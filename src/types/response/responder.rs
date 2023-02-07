@@ -1,9 +1,17 @@
-use crate::Response;
+use super::{Code, Response};
 
-pub struct ResponseBuilder(pub(crate) Response);
+#[must_use]
+pub struct Responder(pub(crate) Response);
+impl Responder {
+    pub fn new(code: Code) -> Self {
+        Self(Response {
+            code,
+            headers: String::from("Server: SimpleHttpServer\r\n"),
+            body: None,
+        })
+    }
 
-impl ResponseBuilder {
-    pub fn build(self) -> Response {
+    pub(crate) fn response(self) -> Response {
         self.0
     }
 

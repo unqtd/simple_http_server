@@ -1,6 +1,4 @@
-use crate::protocol_impl::http_connection::{HttpError, InvalidBadRequestKind};
-
-use super::{body::Body, headers::Headers};
+use super::{body::Body, headers::Headers, http_error::HttpError};
 
 #[derive(Debug)]
 pub struct Request {
@@ -35,7 +33,7 @@ impl TryFrom<&str> for Method {
         match value {
             "GET" => Ok(Self::Get),
             "POST" => Ok(Self::Post),
-            _ => Err(HttpError::BadRequest(InvalidBadRequestKind::Method)),
+            _ => Err(HttpError::InvalidMethod(value.to_string())),
         }
     }
 }
