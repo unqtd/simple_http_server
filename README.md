@@ -30,6 +30,14 @@ Run:
 ADDR="localhost:7070" cargo run --example hello_world
 ```
 
+### Структура проекта 
+
+Основной исходный код сервера содержит директория `src`, внутри которой:
+- `lib.rs` - точка-входа сервера.  
+- `http_connection` - реализация HTTP-соединения. 
+- `types` - содержит типовое описание объектов Request, Response и т.д., а 
+также методы для их обработки. 
+
 ### Ссылки
 
 * [Rustbook](https://doc.rust-lang.org/book/ch20-00-final-project-a-web-server.html)
