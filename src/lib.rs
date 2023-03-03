@@ -1,71 +1,72 @@
-mod http_connection;
-mod types;
+mod common;
+mod connection;
+mod request;
+mod response;
 
-use http_connection::HttpConnection;
+use connection::{errors::HttpError, HttpConnection};
 use std::{io, net::TcpListener};
 
-pub use types::{request::Request, response::responder::Responder, response::Code};
+pub use request::Request;
+pub use response::{Code, Response};
 
-pub struct SimpleHttpServer<'a, Handler> {
-    addr: &'a str,
+pub struct SimpleHttpServer<OnReqHandler, OnErrHandler> {
     listener: TcpListener,
-    /// Callback-реакция на приходящий запрос.
-    handler: Handler,
+    handlers: Handlers<OnReqHandler, OnErrHandler>,
 }
 
-impl<'a, Handler> SimpleHttpServer<'a, Handler>
+pub struct Handlers<OnReq, OnErr> {
+    pub on_request: OnReq,
+    pub on_error: OnErr,
+}
+
+impl<OnReq, OnErr> SimpleHttpServer<OnReq, OnErr>
 where
-    Handler: FnMut(Request) -> Responder,
+    OnReq: FnMut(Request) -> Response,
+    OnErr: FnMut(HttpError),
 {
-    /// # Errors
-    ///
-    /// `Err` будет возвращён в случае провальной попытки создать объект
-    /// `TcpListener` по заданному адресу.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let server = SimpleHttpServer::new(
-    ///     "localhost:7070",
-    ///     |_| Responder::new(Code::Ok)
-    /// ).unwrap();
-    /// ```
-    pub fn new(addr: &'a str, handler: Handler) -> io::Result<Self> {
+    pub fn new(addr: &str, handlers: Handlers<OnReq, OnErr>) -> io::Result<Self> {
         Ok(Self {
             listener: TcpListener::bind(addr)?,
-            handler,
-            addr,
+            handlers,
         })
     }
 
-    /// Устанавливает `SimpleHttpServer` в состояние прослушивания.
-    ///
-    /// # Panics
-    ///
-    /// Панику вызывают ошибки связанные с IO: сеть, ...
     pub fn listen(mut self) -> ! {
-        println!("[INFO]: Сервер запущен на {} 🚀!", self.addr);
+        loop {
+            let mut connection = self.accept();
 
-        for stream in self.listener.incoming() {
-            let mut connection = HttpConnection(stream.unwrap());
-
-            match connection.read_request() {
-                Ok(request) => {
-                    println!("[TRACE]: {request:?}");
-
-                    let response = (self.handler)(request).response();
-                    connection.send_response(&response).unwrap();
-                }
-                Err(err) => {
-                    eprintln!("[WARN]: {err}");
-
-                    connection
-                        .send_response(&Responder::new(Code::BadRequest).response())
-                        .unwrap();
-                }
+            if let Some(request) = self.read(&mut connection) {
+                let response = (self.handlers.on_request)(request);
+                self.send(&mut connection, response);
+            } else {
+                self.send(&mut connection, Response::from(Code::BadRequest));
             }
         }
+    }
 
-        unreachable!()
+    fn accept(&mut self) -> HttpConnection {
+        match self.listener.accept() {
+            Ok((stream, _)) => HttpConnection(stream),
+            Err(err) => {
+                (self.handlers.on_error)(HttpError::Io(err));
+                self.accept()
+            }
+        }
+    }
+
+    fn read(&mut self, connection: &mut HttpConnection) -> Option<Request> {
+        match connection.request() {
+            Ok(request) => Some(request),
+            Err(err) => {
+                (self.handlers.on_error)(HttpError::Request(err));
+                None
+            }
+        }
+    }
+
+    fn send(&mut self, connection: &mut HttpConnection, response: Response) {
+        if let Err(error) = connection.send(response) {
+            (self.handlers.on_error)(HttpError::Io(error));
+        }
     }
 }
