@@ -1,7 +1,9 @@
 use super::{Code, Response};
 
 #[must_use]
+#[derive(Debug)]
 pub struct Responder(pub(crate) Response);
+
 impl Responder {
     pub fn new(code: Code) -> Self {
         Self(Response {

@@ -6,16 +6,17 @@ use std::{io, net::TcpListener};
 
 pub use types::{request::Request, response::responder::Responder, response::Code};
 
-/// Callback-реакция на приходящий запрос.
-type Handler = fn(Request) -> Responder;
-
-pub struct SimpleHttpServer<'a> {
+pub struct SimpleHttpServer<'a, Handler> {
     addr: &'a str,
     listener: TcpListener,
-    request_handler: Handler,
+    /// Callback-реакция на приходящий запрос.
+    handler: Handler,
 }
 
-impl<'a> SimpleHttpServer<'a> {
+impl<'a, Handler> SimpleHttpServer<'a, Handler>
+where
+    Handler: FnMut(Request) -> Responder,
+{
     /// # Errors
     ///
     /// `Err` будет возвращён в случае провальной попытки создать объект
@@ -29,11 +30,10 @@ impl<'a> SimpleHttpServer<'a> {
     ///     |_| Responder::new(Code::Ok)
     /// ).unwrap();
     /// ```
-    #[allow(clippy::new_ret_no_self)]
     pub fn new(addr: &'a str, handler: Handler) -> io::Result<Self> {
         Ok(Self {
             listener: TcpListener::bind(addr)?,
-            request_handler: handler,
+            handler,
             addr,
         })
     }
@@ -42,10 +42,8 @@ impl<'a> SimpleHttpServer<'a> {
     ///
     /// # Panics
     ///
-    /// Панику вызывают ошибки связанные с работой сетью, IO:
-    /// * Не удалось установить соединение.
-    /// * Не удалось отправить ответ.
-    pub fn listen(self) {
+    /// Панику вызывают ошибки связанные с IO: сеть, ...
+    pub fn listen(mut self) -> ! {
         println!("[INFO]: Сервер запущен на {} 🚀!", self.addr);
 
         for stream in self.listener.incoming() {
@@ -55,7 +53,7 @@ impl<'a> SimpleHttpServer<'a> {
                 Ok(request) => {
                     println!("[TRACE]: {request:?}");
 
-                    let response = (self.request_handler)(request).response();
+                    let response = (self.handler)(request).response();
                     connection.send_response(&response).unwrap();
                 }
                 Err(err) => {
@@ -67,5 +65,7 @@ impl<'a> SimpleHttpServer<'a> {
                 }
             }
         }
+
+        unreachable!()
     }
 }
